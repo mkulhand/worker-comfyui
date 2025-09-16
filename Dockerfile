@@ -97,7 +97,7 @@ RUN case "${MODEL_TYPE}" in \
         uv pip install -r ComfyUI_essentials/requirements.txt && \
         uv pip install -r ComfyUI-Frame-Interpolation/requirements-no-cupy.txt && \
         uv pip install -r ComfyUI-GGUF/requirements.txt && \
-        uv pip install -r ComfyUI-WanVideoWrapper/requirements.txt \
+        uv pip install -r ComfyUI-WanVideoWrapper/requirements.txt && \
         uv pip install -r RES4LYF/requirements.txt \
         ;; \
     *) \

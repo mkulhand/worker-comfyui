@@ -90,7 +90,7 @@ RUN case "${MODEL_TYPE}" in \
         git clone https://github.com/city96/ComfyUI-GGUF && \
         git clone https://github.com/kijai/ComfyUI-WanVideoWrapper && \
         git clone https://github.com/rgthree/rgthree-comfy.git && \
-        && git clone https://github.com/ClownsharkBatwing/RES4LYF \
+        git clone https://github.com/ClownsharkBatwing/RES4LYF && \
         uv pip install -r ComfyUI-Manager/requirements.txt && \
         uv pip install -r ComfyUI-VideoHelperSuite/requirements.txt && \
         uv pip install -r ComfyUI-KJNodes/requirements.txt && \

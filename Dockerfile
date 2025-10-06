@@ -151,7 +151,7 @@ ARG MODEL_TYPE
 
 # Change working directory to ComfyUI
 WORKDIR /comfyui
-
+ 
 # Create necessary directories upfront
 RUN mkdir -p models/checkpoints models/vae models/unet models/clip
 
@@ -163,7 +163,8 @@ RUN if [ "$MODEL_TYPE" = "wan2.1-i2v720" ]; then \
     fi
 
 RUN if [ "$MODEL_TYPE" = "wan2.1-i2v480" ]; then \
-      wget -q -O models/diffusion_models/wan2.1-i2v-14b-480p-Q8_0.gguf https://huggingface.co/city96/Wan2.1-I2V-14B-480P-gguf/resolve/main/wan2.1-i2v-14b-480p-Q8_0.gguf; \
+      wget -q -O models/diffusion_models/wan2.1-i2v-14b-480p-Q8_0.gguf https://huggingface.co/city96/Wan2.1-I2V-14B-480P-gguf/resolve/main/wan2.1-i2v-14b-480p-Q8_0.gguf && \
+      wget -q -O models/checkpoints/aniWan2.1_i2v480p_new.safetensors https://civitai.com/api/download/models/1852433?type=Model&format=SafeTensor&size=pruned&fp=fp8; \
     fi
 
 RUN if [ "$MODEL_TYPE" = "wan2.1-t2v" ]; then \
@@ -211,8 +212,13 @@ RUN if [ "$MODEL_TYPE" = "flux1-dev-fp8" ]; then \
       wget -q -O models/checkpoints/flux1-dev-fp8.safetensors https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors; \
     fi
 
+COPY wan21NSFWClipVisionH_v10.safetensors models/clip_vision/wan21NSFWClipVisionH_v10.safetensors
+RUN mkdir -p /comfyui/custom_nodes/ComfyUI-Frame-Interpolation/ckpts/film
+RUN wget -q -O /comfyui/custom_nodes/ComfyUI-Frame-Interpolation/ckpts/film/film_net_fp32.pt https://github.com/dajes/frame-interpolation-pytorch/releases/download/v1.0.0/film_net_fp32.pt
+
 # Stage 3: Final image
 FROM base AS final
 
 # Copy models from stage 2 to the final image
 COPY --from=downloader /comfyui/models /comfyui/models
+COPY --from=downloader /comfyui/custom_nodes /comfyui/custom_nodes

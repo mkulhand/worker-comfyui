@@ -89,8 +89,11 @@ RUN case "${MODEL_TYPE}" in \
         git clone https://github.com/asagi4/ComfyUI-Adaptive-Guidance && \
         git clone https://github.com/city96/ComfyUI-GGUF && \
         git clone https://github.com/kijai/ComfyUI-WanVideoWrapper && \
-        git clone https://github.com/rgthree/rgthree-comfy.git && \
+        git clone https://github.com/HenkDz/rgthree-comfy && \
         git clone https://github.com/ClownsharkBatwing/RES4LYF && \
+        git clone https://github.com/princepainter/ComfyUI-PainterI2V && \
+        git clone https://github.com/filliptm/ComfyUI_Fill-Nodes && \
+        git clone https://github.com/ashtar1984/comfyui-find-perfect-resolution && \
         uv pip install -r ComfyUI-Manager/requirements.txt && \
         uv pip install -r ComfyUI-VideoHelperSuite/requirements.txt && \
         uv pip install -r ComfyUI-KJNodes/requirements.txt && \
@@ -98,7 +101,9 @@ RUN case "${MODEL_TYPE}" in \
         uv pip install -r ComfyUI-Frame-Interpolation/requirements-no-cupy.txt && \
         uv pip install -r ComfyUI-GGUF/requirements.txt && \
         uv pip install -r ComfyUI-WanVideoWrapper/requirements.txt && \
-        uv pip install -r RES4LYF/requirements.txt \
+        uv pip install -r rgthree-comfy/requirements.txt && \
+        uv pip install -r RES4LYF/requirements.txt && \
+        uv pip install -r ComfyUI_Fill-Nodes/requirements.txt \
         ;; \
     *) \
         echo "Skipping wan specific custom nodes installation" \
@@ -146,7 +151,6 @@ CMD ["/start.sh"]
 # Stage 2: Download models
 FROM base AS downloader
 
-ARG HUGGINGFACE_ACCESS_TOKEN
 ARG MODEL_TYPE
 
 # Change working directory to ComfyUI

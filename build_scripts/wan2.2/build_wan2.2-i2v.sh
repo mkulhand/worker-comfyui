@@ -1,6 +1,12 @@
 #!/bin/bash
+set -e
 
-docker build --platform linux/amd64 \
+# Make sure the key is added to ssh-agent
+ssh-add ~/.ssh/ssh_github
+
+DOCKER_BUILDKIT=1 docker build \
+  --ssh default \
+  --platform linux/amd64 \
   --build-arg COMFYUI_VERSION=latest \
   --build-arg CUDA_VERSION_FOR_COMFY= \
   --build-arg ENABLE_PYTORCH_UPGRADE=false \

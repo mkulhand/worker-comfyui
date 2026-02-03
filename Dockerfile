@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.6
 # Build argument for base image selection - use PyTorch image with CUDA 12.8
 ARG BASE_IMAGE=pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime
 
@@ -22,6 +23,7 @@ ENV CMAKE_BUILD_PARALLEL_LEVEL=8
 # Install Python, git and other necessary tools
 RUN apt-get update && apt-get install -y \
     git \
+    openssh-client \
     wget \
     libgl1 \
     libglib2.0-0 \
@@ -76,10 +78,14 @@ WORKDIR /comfyui
 ARG MODEL_TYPE
 
 # Clone and install custom node for WAN
-RUN case "${MODEL_TYPE}" in \
+RUN --mount=type=ssh case "${MODEL_TYPE}" in \
     wan*) \
         rm -rf custom_nodes/* && \
         cd custom_nodes && \
+        mkdir -p ~/.ssh && \
+        chmod 700 ~/.ssh && \
+        ssh-keyscan github.com >> ~/.ssh/known_hosts && \
+        git clone git@github.com:ghazette/ComfyUI-Yamete-Pack && \
         git clone https://github.com/ltdrdata/ComfyUI-Manager && \
         git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite && \
         git clone https://github.com/kijai/ComfyUI-KJNodes && \
@@ -94,6 +100,8 @@ RUN case "${MODEL_TYPE}" in \
         git clone https://github.com/princepainter/ComfyUI-PainterI2V && \
         git clone https://github.com/filliptm/ComfyUI_Fill-Nodes && \
         git clone https://github.com/ashtar1984/comfyui-find-perfect-resolution && \
+        git clone https://github.com/ghazette/ComfyUI-WD14-Tagger && \
+        git clone https://github.com/ltdrdata/ComfyUI-Impact-Pack && \
         uv pip install -r ComfyUI-Manager/requirements.txt && \
         uv pip install -r ComfyUI-VideoHelperSuite/requirements.txt && \
         uv pip install -r ComfyUI-KJNodes/requirements.txt && \
@@ -103,12 +111,16 @@ RUN case "${MODEL_TYPE}" in \
         uv pip install -r ComfyUI-WanVideoWrapper/requirements.txt && \
         uv pip install -r rgthree-comfy/requirements.txt && \
         uv pip install -r RES4LYF/requirements.txt && \
-        uv pip install -r ComfyUI_Fill-Nodes/requirements.txt \
+        uv pip install -r ComfyUI_Fill-Nodes/requirements.txt && \
+        uv pip install -r ComfyUI-WD14-Tagger/requirements.txt && \
+        uv pip install -r ComfyUI-Yamete-Pack/requirements.txt && \
+        uv pip install -r ComfyUI-Impact-Pack/requirements.txt \
         ;; \
     *) \
         echo "Skipping wan specific custom nodes installation" \
         ;; \
   esac
+
 
 # Additional pip packages needed by custom WAN nodes
 RUN case "${MODEL_TYPE}" in \
@@ -161,8 +173,12 @@ RUN mkdir -p models/checkpoints models/vae models/unet models/clip
 
 COPY models_local/${MODEL_TYPE}/ models/
 
-RUN mkdir -p /comfyui/custom_nodes/ComfyUI-Frame-Interpolation/ckpts/film
-RUN wget -q -O /comfyui/custom_nodes/ComfyUI-Frame-Interpolation/ckpts/film/film_net_fp32.pt https://github.com/dajes/frame-interpolation-pytorch/releases/download/v1.0.0/film_net_fp32.pt
+RUN mkdir -p /comfyui/custom_nodes/ComfyUI_Fill-Nodes/nodes/cache/rife_models && \
+    mkdir -p /comfyui/custom_nodes/ComfyUI-WD14-Tagger/models
+
+RUN wget https://huggingface.co/SmilingWolf/wd-vit-tagger-v3/resolve/main/model.onnx -O /comfyui/custom_nodes/ComfyUI-WD14-Tagger/models/wd-vit-tagger-v3.onnx
+RUN wget https://huggingface.co/SmilingWolf/wd-vit-tagger-v3/resolve/main/selected_tags.csv -O /comfyui/custom_nodes/ComfyUI-WD14-Tagger/models/wd-vit-tagger-v3.csv
+RUN wget https://huggingface.co/hfmaster/models-moved/resolve/cab6dcee2fbb05e190dbb8f536fbdaa489031a14/rife/rife49.pth -O /comfyui/custom_nodes/ComfyUI_Fill-Nodes/nodes/cache/rife_models/rife49.pth
 
 # Stage 3: Final image
 FROM base AS final

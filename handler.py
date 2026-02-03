@@ -636,7 +636,8 @@ def handler(job):
 
         prompt_history = history.get(prompt_id, {})
         outputs = prompt_history.get("outputs", {})
-
+        validation_results = []
+        tag_results = []
         if not outputs:
             warning_msg = f"No outputs found in history for prompt {prompt_id}."
             print(f"worker-comfyui - {warning_msg}")
@@ -644,7 +645,48 @@ def handler(job):
                 errors.append(warning_msg)
 
         print(f"worker-comfyui - Processing {len(outputs)} output nodes...")
+        
         for node_id, node_output in outputs.items():
+            # WD14 Tagger tags and ratings
+            if "tags_with_probabilities" in node_output:
+                tags_list = node_output.get("tags", [])
+                formatted_list = node_output["tags_with_probabilities"]
+                ratings_list = node_output.get("ratings", [])
+                n = max(len(tags_list), len(formatted_list), len(ratings_list))
+                for idx in range(n):
+                    formatted_str = formatted_list[idx] if idx < len(formatted_list) else ""
+                    try:
+                        rating = json.loads(ratings_list[idx]) if idx < len(ratings_list) else {}
+                    except (json.JSONDecodeError, TypeError):
+                        rating = {}
+
+                    arr_tags = [x.split("#") for x in formatted_str.split(",")] if formatted_str else []
+                    tags = {}
+                    for tag in arr_tags:
+                        if len(tag) == 2:
+                            tags[tag[0]] = float(tag[1])
+                        else:
+                            print(f"Error: tag format is not valid: {tag}")
+                    caption = {
+                        "tag": tags,
+                        "rating": rating
+                    }
+                    tag_results.append({ 
+                        "node_id": node_id,
+                        "caption": caption,
+                    })
+                print(f"✓ Tags (node {node_id}): {n} image(s)")
+
+            # YametePixelTagger validation result
+            if "valid" in node_output:
+                valids = node_output["valid"]
+                v = {
+                    "node_id": node_id,
+                    "valid": valids[0] if len(valids) == 1 else valids,
+                }
+                validation_results.append(v)
+                print(f"✓ Validation (node {node_id}): valid={v['valid']}")
+
             if any(key in node_output for key in ["images", "gifs"]):
                 media_key = "gifs" if "gifs" in node_output else "images"
                 count = len(node_output[media_key])
@@ -769,6 +811,10 @@ def handler(job):
 
     if output_data:
         final_result["images"] = output_data
+    if validation_results:
+        final_result["validation"] = validation_results
+    if tag_results:
+        final_result["tags"] = tag_results
 
     if errors:
         final_result["errors"] = errors
